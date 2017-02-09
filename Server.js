@@ -1,7 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var googleMapsClient = require('@google/maps').createClient({
-	key: 'AIzaSyCWGCg6zrA7JSonQLrysZXGEKwa9AsEayY'
+	key: process.env.mapsKey
 });
 
 var app = express();
@@ -14,7 +14,6 @@ app.get('/', function(req, res) {
 });
 
 app.post('/routes', function(req, res) {
-	console.log(req.body);
 	res.setHeader('Content-Type', 'application/json');
 	var startLat = req.body.startLat;
 	var endLat = req.body.endLat;
