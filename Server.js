@@ -48,6 +48,7 @@ app.post('/routes', function(req, res) {
 	googleMapsClient.directions(query, function(err, response) {
 		if (!err) {
 			console.log('Routes retrieved.');
+			console.log(response);
 			res.setHeader('Content-Type', 'application/json');
 			res.json({
 				routes : response.json.routes
