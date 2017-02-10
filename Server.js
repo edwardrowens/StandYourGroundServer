@@ -6,6 +6,33 @@ var googleMapsClient = require('@google/maps').createClient({
 
 var app = express();
 
+function Player(lat, lng, radius) {
+	this.lat = lat;
+	this.lng = lng;
+	this.radius = radius;
+};
+
+var players = [];
+
+function deg2rad(deg) {
+  return deg * (Math.PI/180)
+}
+
+function withinDistance(player1, player2) {
+  var R = 3959; // Radius of the earth in miles
+  var dLat = deg2rad(player2.lat-player1.lat);  // deg2rad below
+  var dLon = deg2rad(player2.lng-player1.lng); 
+  var a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(player1.lat)) * Math.cos(deg2rad(player2.lat)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  var d = R * c; // Distance in miles
+  
+  return (d <= player1.radius) && (d <= player2.radius);
+}
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -51,7 +78,9 @@ app.post('/routes', function(req, res) {
 			console.log(response);
 			res.setHeader('Content-Type', 'application/json');
 			res.json({
-				routes : response.json.routes
+				routes : response.json.routes,
+				status : response.json.status,
+				error_message : response.json.error_message
 			});
 			res.send();
 		} else {
@@ -60,6 +89,30 @@ app.post('/routes', function(req, res) {
 			res.send("Routing failed");
 		}
 	});
+});
+
+app.post('/findMatch', function(req, res) {
+	console.log("Searching for match!")
+	res.setHeader('Content-Type', 'application/json');
+	var p = new Player(req.body.lat, req.body.lng, req.body.radius);
+	
+	for (i = 0; i < players.length; ++i) {
+		var match = withinDistance(p, players[i]);
+		if (match) {
+			console.log(players)
+			players = players.splice(i, 1);
+			console.log("Match found!")
+			res.json({
+				player: players[i]
+			});
+			res.status = 200;
+			res.send();
+			return;
+		}
+	}
+	players.push(p);
+	console.log("No match found")
+	res.sendStatus(204);
 });
 
 console.log('Listening on port %d', process.env.PORT || 8000);
