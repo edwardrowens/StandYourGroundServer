@@ -6,13 +6,16 @@ var googleMapsClient = require('@google/maps').createClient({
 
 var app = express();
 
-function Player(lat, lng, radius) {
+function Player(id, lat, lng, radius, timestamp, ip) {
+	this.id = id;
 	this.lat = lat;
 	this.lng = lng;
 	this.radius = radius;
+	this.timestamp = timestamp;
+	this.ip = ip;
 };
 
-var players = [];
+var players = {};
 
 function deg2rad(deg) {
   return deg * (Math.PI/180)
@@ -29,8 +32,17 @@ function withinDistance(player1, player2) {
     ; 
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
   var d = R * c; // Distance in miles
-  
   return (d <= player1.radius) && (d <= player2.radius);
+}
+
+function scrubPlayers(scrubTime) {
+	for (id in players) {
+		var inactive = Date.now() - players[id].timestamp;
+		if (inactive > scrubTime) {
+			console.log("removing player " + id + " for being inactive for " + inactive);
+			delete players[id];
+		}
+	}
 }
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -94,23 +106,31 @@ app.post('/routes', function(req, res) {
 app.post('/findMatch', function(req, res) {
 	console.log("Searching for match!")
 	res.setHeader('Content-Type', 'application/json');
-	var p = new Player(req.body.lat, req.body.lng, req.body.radius);
+	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now(), req.body.ip);
+	players[p.id] = p;
 	
-	for (i = 0; i < players.length; ++i) {
-		var match = withinDistance(p, players[i]);
-		if (match) {
-			console.log(players)
-			players = players.splice(i, 1);
-			console.log("Match found!")
-			res.json({
-				player: players[i]
-			});
-			res.status = 200;
-			res.send();
-			return;
+	scrubPlayers(60000); // Scrub players who have not sent a request in the past minute.
+	
+	for (id in players) {
+		if (id != p.id) {
+			var match = withinDistance(p, players[id]);
+				if (match) {
+					delete players[id];
+					if (players[p.id]) {
+						delete players[p.id]
+					}
+					console.log("Match found!")
+					res.json({
+						player: players[id]
+					});
+					res.status = 200;
+					console.log(players);
+					res.send();
+					return;
+				}
 		}
 	}
-	players.push(p);
+	console.log(players);
 	console.log("No match found")
 	res.sendStatus(204);
 });
