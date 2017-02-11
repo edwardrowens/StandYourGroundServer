@@ -136,7 +136,11 @@ app.post('/findMatch', function(req, res) {
 });
 
 app.get('/ip', function(req, res) {
-	res.json({ip : req.connection.remoteAddress});
+	console.log('X-forward: ' + req.headers['x-forwarded-for']);
+	console.log('Connection remote address: ' + req.connection.remoteAddress);
+	console.log('Socket remote address: ' + req.socket.remoteAddress);
+	console.log('Socket connection remote address: ' + req.connection.socket.remoteAddress);
+	res.json({ip : req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress});
 	res.status(200);
 	res.send();
 });
