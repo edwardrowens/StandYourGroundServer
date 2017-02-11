@@ -136,7 +136,9 @@ app.post('/findMatch', function(req, res) {
 });
 
 app.get('/ip', function(req, res) {
-	res.send(res.json({ip : req.connection.remoteAddress});
+	res.json({ip : req.connection.remoteAddress});
+	res.status(200);
+	res.send();
 });
 
 console.log('Listening on port %d', process.env.PORT || 8000);
