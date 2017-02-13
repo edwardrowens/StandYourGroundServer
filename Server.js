@@ -12,10 +12,15 @@ function Player(id, lat, lng, radius, timestamp, ip) {
 	this.lng = lng;
 	this.radius = radius;
 	this.timestamp = timestamp;
-	this.ip = ip;
+	if (ip) {
+		this.ip = ip;
+	} else {
+		this.ip = "";
+	}
 };
 
 var players = {};
+var playersInGame = {};
 
 function deg2rad(deg) {
   return deg * (Math.PI/180)
@@ -32,7 +37,7 @@ function withinDistance(player1, player2) {
     ; 
   var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
   var d = R * c; // Distance in miles
-  return (d <= player1.radius) && (d <= player2.radius);
+  return (d <= player1.radius && d >= 1) && (d <= player2.radius && d >= 1);
 }
 
 function scrubPlayers(scrubTime) {
@@ -106,31 +111,52 @@ app.post('/routes', function(req, res) {
 app.post('/findMatch', function(req, res) {
 	console.log("Searching for match!")
 	res.setHeader('Content-Type', 'application/json');
-	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now(), req.body.ip);
-	players[p.id] = p;
+	if (req.body.radius < 1) {
+		res.status = 400;
+		res.send("The radius must be greater than or equal to 1 mile");
+	}
 	
-	scrubPlayers(60000); // Scrub players who have not sent a request in the past minute.
+	scrubPlayers(600000000); // Scrub players who have not sent a request in the past minute.
+	console.log(players);
+	
+	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now(), getPublicIp(req));
+	if (p.id in playersInGame) {
+		console.log(p.id + " is already in a game with " + playersInGame[p.id].id);
+		res.json({
+			lat: playersInGame[p.id].lat,
+			lng: playersInGame[p.id].lng,
+			ip: playersInGame[p.id].ip
+		});
+		res.status = 200;
+		res.send();
+		return;
+	}
+	
+	players[p.id] = p;
 	
 	for (id in players) {
 		if (id != p.id) {
 			var match = withinDistance(p, players[id]);
 				if (match) {
+					playersInGame[id] = p;
+					playersInGame[p.id] = players[id];
 					delete players[id];
 					if (players[p.id]) {
 						delete players[p.id]
 					}
 					console.log("Match found!")
+					console.log("Opponent is " + JSON.stringify(playersInGame[p.id]));
 					res.json({
-						player: players[id]
+						lat: playersInGame[p.id].lat,
+						lng: playersInGame[p.id].lng,
+						ip: playersInGame[p.id].ip
 					});
 					res.status = 200;
-					console.log(players);
 					res.send();
 					return;
 				}
 		}
 	}
-	console.log(players);
 	console.log("No match found")
 	res.sendStatus(204);
 });
@@ -146,6 +172,23 @@ app.get('/ip', function(req, res) {
 	res.status(200);
 	res.send();
 });
+
+app.delete('/matchingPlayers/:playerId', function(req, res) {
+	console.log("Deleting " + req.params.playerId + " from list of players to be matched");
+	if (req.params.playerId in players) {
+		delete players[req.params.playerId];
+	}
+	res.sendStatus(200);
+});
+
+function getPublicIp(req) {
+	var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+	if (!ip && 'socket' in req.connection) {
+		ip = req.connection.socket.remoteAddress
+	}
+	
+	return ip;
+}
 
 console.log('Listening on port %d', process.env.PORT || 8000);
 var server = app.listen(process.env.PORT || 8000);
