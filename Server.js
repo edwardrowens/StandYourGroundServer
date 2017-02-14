@@ -125,7 +125,8 @@ app.post('/findMatch', function(req, res) {
 		res.json({
 			lat: playersInGame[p.id].lat,
 			lng: playersInGame[p.id].lng,
-			ip: playersInGame[p.id].ip
+			ip: playersInGame[p.id].ip,
+			isServer: false
 		});
 		res.status = 200;
 		res.send();
@@ -149,7 +150,8 @@ app.post('/findMatch', function(req, res) {
 					res.json({
 						lat: playersInGame[p.id].lat,
 						lng: playersInGame[p.id].lng,
-						ip: playersInGame[p.id].ip
+						ip: playersInGame[p.id].ip,
+						isServer: true
 					});
 					res.status = 200;
 					res.send();
