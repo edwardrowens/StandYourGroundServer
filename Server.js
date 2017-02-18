@@ -201,7 +201,7 @@ app.get('/matchmaking/players/', function(req, res) {
 	res.send();
 });
 
-app.get('/games'), function(req, res) {
+app.get('/games', function(req, res) {
 	console.log('Retrieving all players currently in a game');
 	res.json({
 		inGame: playersInGame
