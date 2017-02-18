@@ -183,6 +183,15 @@ app.delete('/matchingPlayers/:playerId', function(req, res) {
 	res.sendStatus(200);
 });
 
+app.get('/matchingPlayers/', function(req, res) {
+	console.log('Retrieving all players searching for a match');
+	res.json({
+		players: players
+	});
+	res.status(200);
+	res.send();
+});
+
 function getPublicIp(req) {
 	var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
 	if (!ip && 'socket' in req.connection) {
