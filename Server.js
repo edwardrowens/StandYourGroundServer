@@ -108,7 +108,7 @@ app.post('/routes', function(req, res) {
 	});
 });
 
-app.post('/findMatch', function(req, res) {
+app.post('/matchmaking', function(req, res) {
 	console.log("Searching for match!")
 	res.setHeader('Content-Type', 'application/json');
 	if (req.body.radius < 1) {
@@ -116,7 +116,7 @@ app.post('/findMatch', function(req, res) {
 		res.send("The radius must be greater than or equal to 1 mile");
 	}
 	
-	scrubPlayers(600000000); // Scrub players who have not sent a request in the past minute.
+	scrubPlayers(6000000); // Scrub players who have not sent a request in the past minute.
 	console.log(players);
 	
 	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now(), getPublicIp(req));
@@ -175,7 +175,7 @@ app.get('/ip', function(req, res) {
 	res.send();
 });
 
-app.delete('/matchingPlayers/:playerId', function(req, res) {
+app.delete('/matchmaking/players/:playerId', function(req, res) {
 	console.log("Deleting " + req.params.playerId + " from list of players to be matched");
 	if (req.params.playerId in players) {
 		delete players[req.params.playerId];
@@ -183,10 +183,28 @@ app.delete('/matchingPlayers/:playerId', function(req, res) {
 	res.sendStatus(200);
 });
 
-app.get('/matchingPlayers/', function(req, res) {
+app.get('/matchmaking/players', function(req, res) {
 	console.log('Retrieving all players searching for a match');
 	res.json({
 		players: players
+	});
+	res.status(200);
+	res.send();
+});
+
+app.get('/matchmaking/players/', function(req, res) {
+	console.log('Retrieving all players searching for a match');
+	res.json({
+		players: players
+	});
+	res.status(200);
+	res.send();
+});
+
+app.get('/games'), function(req, res) {
+	console.log('Retrieving all players currently in a game');
+	res.json({
+		inGame: playersInGame
 	});
 	res.status(200);
 	res.send();
