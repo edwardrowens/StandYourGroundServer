@@ -116,7 +116,7 @@ app.post('/matchmaking', function(req, res) {
 		res.send("The radius must be greater than or equal to 1 mile");
 	}
 	
-	scrubPlayers(6000000); // Scrub players who have not sent a request in the past minute.
+	scrubPlayers(60000); // Scrub players who have not sent a request in the past minute.
 	console.log(players);
 	
 	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now(), getPublicIp(req));
