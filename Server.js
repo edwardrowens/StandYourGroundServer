@@ -3,24 +3,21 @@ var bodyParser = require('body-parser');
 var googleMapsClient = require('@google/maps').createClient({
 	key: process.env.mapsKey
 });
+var UUID = require('uuid/v4');
 
 var app = express();
 
-function Player(id, lat, lng, radius, timestamp, ip) {
+function Player(id, lat, lng, radius, timestamp) {
 	this.id = id;
 	this.lat = lat;
 	this.lng = lng;
 	this.radius = radius;
 	this.timestamp = timestamp;
-	if (ip) {
-		this.ip = ip;
-	} else {
-		this.ip = "";
-	}
 };
 
 var players = {};
 var playersInGame = {};
+var games = {};
 
 function deg2rad(deg) {
   return deg * (Math.PI/180)
@@ -119,14 +116,13 @@ app.post('/matchmaking', function(req, res) {
 	scrubPlayers(60000); // Scrub players who have not sent a request in the past minute.
 	console.log(players);
 	
-	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now(), getPublicIp(req));
+	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now());
 	if (p.id in playersInGame) {
 		console.log(p.id + " is already in a game with " + playersInGame[p.id].id);
 		res.json({
 			lat: playersInGame[p.id].lat,
 			lng: playersInGame[p.id].lng,
-			ip: playersInGame[p.id].ip,
-			isServer: false
+			gameSessionId: playersInGame[p.id].gameSessionId
 		});
 		res.status = 200;
 		res.send();
@@ -139,8 +135,18 @@ app.post('/matchmaking', function(req, res) {
 		if (id != p.id) {
 			var match = withinDistance(p, players[id]);
 				if (match) {
+					var gameSessionId = UUID();
+					p.gameSessionId = gameSessionId;
+					players[id].gameSessionId = gameSessionId;
+					
 					playersInGame[id] = p;
 					playersInGame[p.id] = players[id];
+					
+					games[gameSessionId] = {};
+					
+					games[gameSessionId].player1 = p;
+					games[gameSessionId].player2 = players[id];
+					
 					delete players[id];
 					if (players[p.id]) {
 						delete players[p.id]
@@ -150,8 +156,7 @@ app.post('/matchmaking', function(req, res) {
 					res.json({
 						lat: playersInGame[p.id].lat,
 						lng: playersInGame[p.id].lng,
-						ip: playersInGame[p.id].ip,
-						isServer: true
+						gameSessionId: gameSessionId
 					});
 					res.status = 200;
 					res.send();
@@ -208,6 +213,26 @@ app.get('/games', function(req, res) {
 	});
 	res.status(200);
 	res.send();
+});
+
+app.delete('/games/:gameSessionId', function(req, res) {
+	console.log('Removing game ' + req.params.gameSessionId);
+	if (req.params.gameSessionId in games) {
+		var player1 = games[req.params.gameSessionId].player1;
+		var player2 = games[req.params.gameSessionId].player2;
+		delete games[req.params.gameSessionId];
+		if (player1.id in playersInGame) {
+			delete playersInGame[player1.id];
+		}
+		if (player2.id in playersInGame) {
+			delete playersInGame[player2.id];
+		}
+		console.log('Game ' + req.params.gameSessionId + ' has been removed.');
+		res.sendStatus(200);
+	} else {
+		res.status(404);
+		res.send("Game session not found");
+	}
 });
 
 function getPublicIp(req) {
