@@ -9,12 +9,21 @@ var LatLngService = require('./Service/LatLngService');
 var NetworkingService = require('./Service/NetworkingService');
 
 var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io')(server);
+var socketApp = express();
+var http = require('http').createServer(socketApp);
+var io = require('socket.io')(http);
 
-io.on('connection', function (client) {
-	console.log('Connection!');
-});
+io.on('connection', function (socket) {
+	console.log('Client ' + socket.conn.remoteAddress + ' connected');
+
+	socket.on('message', function(data) {
+		console.log("received data! " + JSON.stringify(data));
+	})
+})
+
+http.listen(8080, function() {
+	console.log("listening on port 8080")
+})
 
 var players = {};
 var playersInGame = {};
