@@ -5,11 +5,11 @@ module.exports = {
 
     withinDistance: function (player1, player2) {
         var R = 3959; // Radius of the earth in miles
-        var dLat = deg2rad(player2.lat - player1.lat);  // deg2rad below
-        var dLon = deg2rad(player2.lng - player1.lng);
+        var dLat = this.deg2rad(player2.lat - player1.lat);
+        var dLon = this.deg2rad(player2.lng - player1.lng);
         var a =
             Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(deg2rad(player1.lat)) * Math.cos(deg2rad(player2.lat)) *
+            Math.cos(this.deg2rad(player1.lat)) * Math.cos(this.deg2rad(player2.lat)) *
             Math.sin(dLon / 2) * Math.sin(dLon / 2)
             ;
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));

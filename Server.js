@@ -161,15 +161,6 @@ app.delete('/matchmaking/players/:playerId', function (req, res) {
 	res.sendStatus(200);
 });
 
-app.get('/matchmaking/players', function (req, res) {
-	console.log('Retrieving all players searching for a match');
-	res.json({
-		players: players
-	});
-	res.status(200);
-	res.send();
-});
-
 app.get('/matchmaking/players/', function (req, res) {
 	console.log('Retrieving all players searching for a match');
 	res.json({
