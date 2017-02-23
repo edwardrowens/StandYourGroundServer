@@ -214,8 +214,10 @@ app.delete('/games/:gameSessionId', function (req, res) {
 	}
 })
 
-http.listen(8080, function() {
-	console.log("Game socket listening on port 8080")
+var gameSocketPort = process.env.PORT || 8080;
+
+http.listen(gameSocketPort, function() {
+	console.log("Game socket listening on port " + gameSocketPort);
 })
 console.log('Listening on port %d', process.env.PORT || 8000)
 var server = app.listen(process.env.PORT || 8000)
