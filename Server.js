@@ -9,8 +9,7 @@ var LatLngService = require('./Service/LatLngService')
 var NetworkingService = require('./Service/NetworkingService')
 
 var app = express()
-var socketApp = express()
-var http = require('http').createServer(socketApp)
+var http = require('http').createServer(app)
 var io = require('socket.io')(http)
 
 io.on('connection', function (socket) {
@@ -214,10 +213,5 @@ app.delete('/games/:gameSessionId', function (req, res) {
 	}
 })
 
-var gameSocketPort = process.env.PORT || 8080;
-
-http.listen(gameSocketPort, function() {
-	console.log("Game socket listening on port " + gameSocketPort);
-})
 console.log('Listening on port %d', process.env.PORT || 8000)
-var server = app.listen(process.env.PORT || 8000)
+http.listen(process.env.PORT || 8000)
