@@ -93,7 +93,7 @@ app.post('/routes', function (req, res) {
 })
 
 app.post('/matchmaking', function (req, res) {
-	console.log("Searching for match!")
+	console.log(req.body.id + " is searching for match")
 	res.setHeader('Content-Type', 'application/json')
 	if (req.body.radius < 1) {
 		res.status = 400
@@ -101,7 +101,6 @@ app.post('/matchmaking', function (req, res) {
 	}
 
 	NetworkingService.scrubPlayers(60000, players) // Scrub players who have not sent a request in the past minute.
-	console.log(players)
 
 	var p = new Player(req.body.id, req.body.lat, req.body.lng, req.body.radius, Date.now())
 	if (p.id in playersInGame) {
