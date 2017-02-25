@@ -1,7 +1,7 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 var googleMapsClient = require('@google/maps').createClient({
-	key: process.env.mapsKey
+	key: 'AIzaSyCfZo9GE10ZJBbY5x5WR1n6vc_DAjQjxI0'
 })
 var UUID = require('uuid/v4')
 var Player = require('./Player')
@@ -13,7 +13,7 @@ var http = require('http').createServer(app)
 var io = require('socket.io')(http)
 
 io.on('connection', function (socket) {
-	socket.on('message', function(gameSessionId) {
+	socket.on('handshake', function(gameSessionId) {
 		if (gameSessionId) {
 			var rooms = io.sockets.adapter.rooms[gameSessionId]
 			if (!rooms) {
@@ -27,6 +27,12 @@ io.on('connection', function (socket) {
 				socket.emit("error", "Invalid gameSessionId");
 			}
 		}
+	})
+
+	socket.on('gameEvent', function(exchange) {
+		exchange = JSON.parse(exchange);
+		console.log('Received exchange ' + exchange.id + " for game session " + exchange.gameSessionId)
+		io.sockets.in(exchange.gameSessionId).emit(exchange.type, JSON.stringify(exchange))
 	})
 })
 
@@ -76,7 +82,6 @@ app.post('/routes', function (req, res) {
 	googleMapsClient.directions(query, function (err, response) {
 		if (!err) {
 			console.log('Routes retrieved.')
-			console.log(response)
 			res.setHeader('Content-Type', 'application/json')
 			res.json({
 				routes: response.json.routes,
