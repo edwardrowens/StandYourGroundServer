@@ -32,7 +32,7 @@ io.on('connection', function (socket) {
 	socket.on('gameEvent', function(exchange) {
 		exchange = JSON.parse(exchange);
 		console.log('Received exchange ' + exchange.id + " for game session " + exchange.gameSessionId)
-		io.sockets.in(exchange.gameSessionId).emit(exchange.type, JSON.stringify(exchange))
+		socket.in(exchange.gameSessionId).broadcast.emit(exchange.type, JSON.stringify(exchange))
 	})
 })
 
