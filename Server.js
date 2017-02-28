@@ -1,7 +1,7 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 var googleMapsClient = require('@google/maps').createClient({
-	key: 'AIzaSyCfZo9GE10ZJBbY5x5WR1n6vc_DAjQjxI0'
+	key: process.env.mapsKey
 })
 var UUID = require('uuid/v4')
 var Player = require('./Player')
