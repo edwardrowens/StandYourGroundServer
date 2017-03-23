@@ -9,11 +9,13 @@ var LatLngService = require('./Service/LatLngService')
 var NetworkingService = require('./Service/NetworkingService')
 
 var app = express()
-var http = require('http').createServer(app)
-var io = require('socket.io')(http)
+var http = require('http')
+var https = require('https')
+var httpServer = http.createServer(app)
+var io = require('socket.io')(httpServer)
 
 io.on('connection', function (socket) {
-	socket.on('handshake', function(gameSessionId) {
+	socket.on('handshake', function (gameSessionId) {
 		if (gameSessionId) {
 			var rooms = io.sockets.adapter.rooms[gameSessionId]
 			if (!rooms) {
@@ -29,7 +31,7 @@ io.on('connection', function (socket) {
 		}
 	})
 
-	socket.on('gameEvent', function(exchange) {
+	socket.on('gameEvent', function (exchange) {
 		exchange = JSON.parse(exchange);
 		console.log('Received exchange ' + exchange.id + " for game session " + exchange.gameSessionId)
 		socket.in(exchange.gameSessionId).broadcast.emit(exchange.type, JSON.stringify(exchange))
@@ -103,6 +105,7 @@ app.post('/matchmaking', function (req, res) {
 	if (req.body.radius < 1) {
 		res.status = 400
 		res.send("The radius must be greater than or equal to 1 mile")
+		return
 	}
 
 	NetworkingService.scrubPlayers(60000, players) // Scrub players who have not sent a request in the past minute.
@@ -217,5 +220,62 @@ app.delete('/games/:gameSessionId', function (req, res) {
 	}
 })
 
+app.post("/places", function (req, res) {
+	console.log("Processing request with payload: " + JSON.stringify(req.body))
+	var radius = req.body.radius;
+	var location = req.body.location;
+	console.log(JSON.stringify(location))
+	var key = process.env.mapsKey;
+
+	if (isNaN(radius) || !location) {
+		res.status(400);
+		res.send("A radius and a location must be provided")
+		return;
+	}
+
+	var options = {
+		host: 'maps.googleapis.com',
+		path: '/maps/api/place/nearbysearch/json?key=' + key
+		+ '&location=' + location.lat + "," + location.lng
+		+ '&radius=' + radius
+	}
+
+	https.get(options, function (response) {
+
+		if (response.statusCode != 200) {
+			console.log("Failed to retrieve places with status code" + response.statusCode)
+			response.resume()
+			res.status(503)
+			res.send("The places request failed due to a problem in the server. Please try again later")
+			return
+		}
+
+		var rawData = '';
+		response.on('data', function (chunk) {
+			rawData += chunk
+		})
+
+		response.on('end', function () {
+			try {
+				var parsedData = JSON.parse(rawData)
+				res.send(parsedData)
+			} catch (e) {
+				console.log(e.message)
+				response.resume()
+				res.status(503)
+				res.send("The places request failed due to a problem in the server. Please try again later")
+				return
+			}
+		})
+
+	}).on('error', function (e) {
+		console.log('ERROR: ' + e.message)
+		response.resume()
+		res.status(503)
+		res.send("The places request failed due to a problem in the server. Please try again later")
+		return
+	})
+})
+
 console.log('Listening on port %d', process.env.PORT || 8000)
-http.listen(process.env.PORT || 8000)
+httpServer.listen(process.env.PORT || 8000)
