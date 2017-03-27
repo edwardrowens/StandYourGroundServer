@@ -7,10 +7,11 @@ var UUID = require('uuid/v4')
 var Player = require('./Player')
 var LatLngService = require('./Service/LatLngService')
 var NetworkingService = require('./Service/NetworkingService')
+var NeutralCampService = require('./Service/NeutralCampService')
 
 var app = express()
 var http = require('http')
-var https = require('https')
+var https = require('follow-redirects').https
 var httpServer = http.createServer(app)
 var io = require('socket.io')(httpServer)
 
@@ -147,19 +148,35 @@ app.post('/matchmaking', function (req, res) {
 				}
 				console.log("Match found!")
 				console.log("Opponent is " + JSON.stringify(playersInGame[p.id]))
-				res.json({
-					lat: playersInGame[p.id].lat,
-					lng: playersInGame[p.id].lng,
-					gameSessionId: gameSessionId
+
+				var location1 = { lat: p.lat, lng: p.lng }
+				var location2 = { lat: playersInGame[p.id].lat, lng: playersInGame[p.id].lng }
+
+				NeutralCampService.retrieveAllNeutrals(location1, location2, function (status, payload) {
+					if (status === 200) {
+						res.json({
+							lat: playersInGame[p.id].lat,
+							lng: playersInGame[p.id].lng,
+							gameSessionId: gameSessionId,
+							neutrals: payload
+						})
+						res.status(200)
+						res.send()
+						return
+					} else {
+						console.log("Problem in creating neutral camps")
+						res.status(status)
+						res.send(payload)
+						return
+					}
 				})
-				res.status = 200
-				res.send()
-				return
 			}
 		}
 	}
-	console.log("No match found")
-	res.sendStatus(204)
+	if (!match) {
+		console.log("No match found")
+		res.sendStatus(204)
+	}
 })
 
 app.get('/ip', function (req, res) {
@@ -220,24 +237,26 @@ app.delete('/games/:gameSessionId', function (req, res) {
 	}
 })
 
-app.post("/places", function (req, res) {
+app.post("/places/nearbysearch", function (req, res) {
 	console.log("Processing request with payload: " + JSON.stringify(req.body))
-	var radius = req.body.radius;
-	var location = req.body.location;
+	var radius = req.body.radius
+	var location = req.body.location
+	var type = req.body.type
 	console.log(JSON.stringify(location))
-	var key = process.env.mapsKey;
+	var key = process.env.mapsKey
 
 	if (isNaN(radius) || !location) {
-		res.status(400);
+		res.status(400)
 		res.send("A radius and a location must be provided")
-		return;
+		return
 	}
 
 	var options = {
 		host: 'maps.googleapis.com',
 		path: '/maps/api/place/nearbysearch/json?key=' + key
-		+ '&location=' + location.lat + "," + location.lng
+		+ '&location=' + location.latitude + "," + location.longitude
 		+ '&radius=' + radius
+		+ '&type=' + type
 	}
 
 	https.get(options, function (response) {
@@ -275,6 +294,39 @@ app.post("/places", function (req, res) {
 		res.send("The places request failed due to a problem in the server. Please try again later")
 		return
 	})
+})
+
+app.get('/places/photo/:photoReference', function (req, res) {
+	console.log("Request for photo")
+	var photoReference = req.params.photoReference
+	var maxWidth = req.query.maxwidth
+		// var key = process.env.mapsKey
+	var key = 'AIzaSyCfZo9GE10ZJBbY5x5WR1n6vc_DAjQjxI0'
+
+	if (isNaN(maxWidth) || !photoReference) {
+		res.status(400)
+		res.send("A max height and a photoReference must be provided")
+		return
+	}
+
+	if (maxWidth > 1600 && maxWidth < 1) {
+		res.status(400)
+		res.send("The max height must be an integer between [1, 1600]")
+	}
+
+	var options = {
+		host: 'maps.googleapis.com',
+		path: '/maps/api/place/photo?'
+		+ 'maxwidth=' + maxWidth
+		+ '&photoreference=' + photoReference
+		+ '&key=' + key
+	}
+
+	var photoRequest = https.request(options, function(response) {
+		res.setHeader("content-type", "image/jpeg");
+		response.pipe(res)
+	})
+	photoRequest.end()
 })
 
 console.log('Listening on port %d', process.env.PORT || 8000)
