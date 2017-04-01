@@ -22,7 +22,6 @@ module.exports = {
             Math.sin(dLon / 2) * Math.sin(dLon / 2)
             ;
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        console.log('DISTANCE BETWEEN: ' + R*c)
         return R * c // Distance in miles
     },
 
@@ -39,8 +38,6 @@ module.exports = {
         By = Math.cos(lat2) * Math.sin(dLon)
         lat3 = Math.atan2(Math.sin(lat1) + Math.sin(lat2), Math.sqrt((Math.cos(lat1) + Bx) * (Math.cos(lat1) + Bx) + By * By))
         lon3 = lon1 + Math.atan2(By, Math.cos(lat1) + Bx)
-
-        console.log("MIDPOINT: " + JSON.stringify({lat: lat3, lng: lon3}))
 
         return {lat: this.rad2deg(lat3), lng: this.rad2deg(lon3)}
     }

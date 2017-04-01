@@ -1,7 +1,8 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 var googleMapsClient = require('@google/maps').createClient({
-	key: process.env.mapsKey
+	// key: process.env.mapsKey
+	key: 'AIzaSyCfZo9GE10ZJBbY5x5WR1n6vc_DAjQjxI0'
 })
 var UUID = require('uuid/v4')
 var Player = require('./Player')
@@ -149,27 +150,15 @@ app.post('/matchmaking', function (req, res) {
 				console.log("Match found!")
 				console.log("Opponent is " + JSON.stringify(playersInGame[p.id]))
 
-				var location1 = { lat: p.lat, lng: p.lng }
-				var location2 = { lat: playersInGame[p.id].lat, lng: playersInGame[p.id].lng }
-
-				NeutralCampService.retrieveAllNeutrals(location1, location2, function (status, payload) {
-					if (status === 200) {
-						res.json({
-							lat: playersInGame[p.id].lat,
-							lng: playersInGame[p.id].lng,
-							gameSessionId: gameSessionId,
-							neutrals: payload
-						})
-						res.status(200)
-						res.send()
-						return
-					} else {
-						console.log("Problem in creating neutral camps")
-						res.status(status)
-						res.send(payload)
-						return
-					}
+				res.json({
+					lat: playersInGame[p.id].lat,
+					lng: playersInGame[p.id].lng,
+					gameSessionId: gameSessionId
 				})
+
+				res.status(200)
+				res.send()
+				return
 			}
 		}
 	}
@@ -242,7 +231,7 @@ app.post("/places/nearbysearch", function (req, res) {
 	var radius = req.body.radius
 	var location = req.body.location
 	var type = req.body.type
-	console.log(JSON.stringify(location))
+	console.log('Call for ' + type + ' made')
 	var key = process.env.mapsKey
 
 	if (isNaN(radius) || !location) {
@@ -300,8 +289,7 @@ app.get('/places/photo/:photoReference', function (req, res) {
 	console.log("Request for photo")
 	var photoReference = req.params.photoReference
 	var maxWidth = req.query.maxwidth
-		// var key = process.env.mapsKey
-	var key = 'AIzaSyCfZo9GE10ZJBbY5x5WR1n6vc_DAjQjxI0'
+	var key = process.env.mapsKey
 
 	if (isNaN(maxWidth) || !photoReference) {
 		res.status(400)
@@ -322,7 +310,7 @@ app.get('/places/photo/:photoReference', function (req, res) {
 		+ '&key=' + key
 	}
 
-	var photoRequest = https.request(options, function(response) {
+	var photoRequest = https.request(options, function (response) {
 		res.setHeader("content-type", "image/jpeg");
 		response.pipe(res)
 	})

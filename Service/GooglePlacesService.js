@@ -6,7 +6,6 @@ module.exports = {
         var radius = payload.radius
         var location = payload.location
         var type = payload.type
-        console.log(JSON.stringify(location))
         var key = process.env.mapsKey
 
         if (isNaN(radius) || !location) {
