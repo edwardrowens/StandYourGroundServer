@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "Server.js",
   "scripts": {
-    "start": "node ./Server.js"
+    "start": "node ./src/Server.js"
   },
   "engines": {
     "node": "4.5.0",
