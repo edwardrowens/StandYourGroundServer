@@ -1,7 +1,7 @@
 var https = require('follow-redirects').https
 
 module.exports = {
-    nearbySearch: function (placesData, callback) {
+    nearbySearch: function (placesData, callback, onError) {
         var options = {
             host: 'maps.googleapis.com',
             path: '/maps/api/place/nearbysearch/json?key=' + placesData.key
@@ -12,7 +12,7 @@ module.exports = {
 
         https.get(options, function (response) {
             callback(response)
-        })
+        }).on('error', onError)
     },
 
     getPhoto(photoReference, maxWidth, key, callback) {

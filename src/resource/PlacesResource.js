@@ -40,7 +40,7 @@ router.route('/nearbysearch').post(function (req, res) {
             }
         })
 
-    }).on('error', function (e) {
+    }, function(error) {
         console.log('ERROR: ' + e.message)
         googlePlacesResponse.resume()
         res.status(503).send("The places request failed due to a problem in the server. Please try again later")
